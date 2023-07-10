@@ -25,6 +25,12 @@ namespace TlcvExtensionsHost.Services
             Config = config;
             _logger.LogInformation("Running {EngineName} at {EnginePath}", config.Name, config.Path);
 
+            if (File.Exists(config.Path))
+            {
+                _logger.LogWarning("Engine at {EnginePath} doesn't exist.", config.Path);
+                return;
+            }
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = config.Path,
