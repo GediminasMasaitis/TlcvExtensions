@@ -37,6 +37,13 @@ namespace TlcvExtensionsHost.Services
 
             _process = Process.Start(startInfo);
             await SendAsync("uci");
+            if (config.Options != null)
+            {
+                foreach (var option in config.Options)
+                {
+                    await SendAsync($"setoption Name {option.Name} value {option.Value}");
+                }
+            }
             while (true)
             {
                 var line = await _process.StandardOutput.ReadLineAsync();
