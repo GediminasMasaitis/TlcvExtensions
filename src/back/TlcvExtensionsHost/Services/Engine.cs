@@ -47,7 +47,7 @@ namespace TlcvExtensionsHost.Services
             {
                 foreach (var option in config.Options)
                 {
-                    await SendAsync($"setoption Name {option.Name} value {option.Value}");
+                    await SendAsync($"setoption Name {option.Name} Value {option.Value}");
                 }
             }
             while (true)
