@@ -246,6 +246,9 @@
           scores[scoreIndex][plyStr] = score;
           chart.data.datasets[scoreIndex].label = info.name;
         }
+      },
+      onerror: function(){
+        console.log("Failed querying backend");
       }
     });
 
