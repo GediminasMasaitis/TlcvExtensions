@@ -17,6 +17,7 @@ namespace TlcvExtensionsHost
             Log.Logger = loggerConfiguration.CreateLogger();
 
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseUrls("http://127.0.0.1:5210");
             builder.Services.Configure<ServiceConfig>(builder.Configuration);
             builder.Services.AddTlcvExtensions();
             var app = builder.Build();
