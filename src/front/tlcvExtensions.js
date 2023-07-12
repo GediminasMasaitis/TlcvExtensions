@@ -52,7 +52,7 @@
         <h3><small id="kibitzer1-time"><mark>	&#8734; </mark></small></h3>
       </div>
       <div class="col-sm-12">
-        <p class="pv"></p>
+        <p class="pv"><small id="kibitzer1-pv"></small></p>
       </div>
     </div>
   </div>`);
@@ -96,7 +96,7 @@
         <h3><small id="kibitzer2-time"><mark>	&#8734; </mark></small></h3>
       </div>
       <div class="col-sm-12">
-        <p class="pv"></p>
+        <p class="pv"><small id="kibitzer2-pv"></small></p>
       </div>
     </div>
   </div>`);
