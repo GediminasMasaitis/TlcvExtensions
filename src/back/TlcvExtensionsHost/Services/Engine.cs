@@ -52,6 +52,11 @@ namespace TlcvExtensionsHost.Services
             }
             while (true)
             {
+                if (_process.HasExited)
+                {
+                    _logger.LogWarning("Engine {EngineName} has exited with exit code {EngineExitCode}", config.Name, _process.ExitCode);
+                    return;
+                }
                 var line = await _process.StandardOutput.ReadLineAsync();
                 HandleOutput(line);
             }
@@ -77,6 +82,11 @@ namespace TlcvExtensionsHost.Services
         private bool TryGetEngineInfo(string line, out EngineInfo info)
         {
             info = new EngineInfo();
+            if (string.IsNullOrEmpty(line))
+            {
+                return false;
+            }
+
             if (!line.Contains("info"))
             {
                 return false;

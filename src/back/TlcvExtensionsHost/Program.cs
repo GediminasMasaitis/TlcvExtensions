@@ -1,6 +1,7 @@
 using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Services;
 using Serilog;
+using Serilog.Events;
 
 namespace TlcvExtensionsHost
 {
@@ -11,9 +12,10 @@ namespace TlcvExtensionsHost
             var loggerConfiguration = new LoggerConfiguration();
             loggerConfiguration.Enrich.FromLogContext();
             loggerConfiguration.WriteTo.Console();
-            //loggerConfiguration.MinimumLevel.Debug();
+            loggerConfiguration.MinimumLevel.Debug();
+            loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
             //loggerConfiguration.MinimumLevel.Information();
-            loggerConfiguration.MinimumLevel.Warning();
+            //loggerConfiguration.MinimumLevel.Warning();
             Log.Logger = loggerConfiguration.CreateLogger();
 
             var builder = WebApplication.CreateBuilder(args);
