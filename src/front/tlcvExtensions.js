@@ -19,43 +19,49 @@
     var layout = $('.main-layout');
     layout.css('grid-template-columns', '40% 30% 30%');
 
-    layout.append('<div id="kibitzer1-info"></div>');
-    var kibitzerInfo = $('#kibitzer1-info');
-    kibitzerInfo.css('grid-row-start', '1');
-    kibitzerInfo.css('grid-column-start', '3');
+    for(var kibitzerIndex = 0; kibitzerIndex < 2; kibitzerIndex++)
+    {
+      var kibitzerNum = kibitzerIndex + 1;
+      layout.append(`<div id="kibitzer${kibitzerNum}-info"></div>`);
+      var kibitzerInfo = $(`#kibitzer${kibitzerNum}-info`);
+      var row = kibitzerIndex % 2 == 0 ? '1' : '4';
+      kibitzerInfo.css('grid-row-start', row);
+      kibitzerInfo.css('grid-column-start', '3');
 
-    kibitzerInfo.append('<h3 id="kibitzer1-name">Kibitzer 1 inactive</h3>');
-    kibitzerInfo.append(`
-  <div class="card fluid">
-    <div class="row">
-      <div class="col-sm">
-        <div class="row">
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Score</small></p>
-            <p class="small-margin info-value" id="kibitzer1-score">0</p>
-          </div>
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Depth</small></p>
-            <p class="small-margin info-value" id="kibitzer1-depth">0</p>
-          </div>
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Nodes</small></p>
-            <p class="small-margin info-value" id="kibitzer1-nodes">0</p>
-          </div>
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Nps</small></p>
-            <p class="small-margin info-value" id="kibitzer1-nps">0</p>
+      kibitzerInfo.append(`<h3 id="kibitzer${kibitzerNum}-name">Kibitzer ${kibitzerNum} inactive</h3>`);
+      kibitzerInfo.append(`
+    <div class="card fluid">
+      <div class="row">
+        <div class="col-sm">
+          <div class="row">
+            <div class="col-sm info">
+              <p class="small-margin"><small class="info-header">Score</small></p>
+              <p class="small-margin info-value" id="kibitzer${kibitzerNum}-score">0</p>
+            </div>
+            <div class="col-sm info">
+              <p class="small-margin"><small class="info-header">Depth</small></p>
+              <p class="small-margin info-value" id="kibitzer${kibitzerNum}-depth">0</p>
+            </div>
+            <div class="col-sm info">
+              <p class="small-margin"><small class="info-header">Nodes</small></p>
+              <p class="small-margin info-value" id="kibitzer${kibitzerNum}-nodes">0</p>
+            </div>
+            <div class="col-sm info">
+              <p class="small-margin"><small class="info-header">Nps</small></p>
+              <p class="small-margin info-value" id="kibitzer${kibitzerNum}-nps">0</p>
+            </div>
           </div>
         </div>
+        <div class="col-sm-3" style="text-align: right">
+          <h3><small id="kibitzer${kibitzerNum}-time"><mark>	&#8734; </mark></small></h3>
+        </div>
+        <div class="col-sm-12">
+          <p class="pv"><small id="kibitzer${kibitzerNum}-pv"></small></p>
+        </div>
       </div>
-      <div class="col-sm-3" style="text-align: right">
-        <h3><small id="kibitzer1-time"><mark>	&#8734; </mark></small></h3>
-      </div>
-      <div class="col-sm-12">
-        <p class="pv"><small id="kibitzer1-pv"></small></p>
-      </div>
-    </div>
-  </div>`);
+    </div>`);
+    }
+
 
     layout.append('<div id="eval-chart-container"><canvas id="eval-chart"></canvas></div>')
     var evalChartContainer = $("#eval-chart-container");
@@ -67,39 +73,6 @@
     var kibitzerInfo = $('#kibitzer2-info');
     kibitzerInfo.css('grid-row-start', '4');
     kibitzerInfo.css('grid-column-start', '3');
-
-    kibitzerInfo.append('<h3 id="kibitzer2-name">Kibitzer 2 inactive</h3>');
-    kibitzerInfo.append(`
-  <div class="card fluid">
-    <div class="row">
-      <div class="col-sm">
-        <div class="row">
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Score</small></p>
-            <p class="small-margin info-value" id="kibitzer2-score">0</p>
-          </div>
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Depth</small></p>
-            <p class="small-margin info-value" id="kibitzer2-depth">0</p>
-          </div>
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Nodes</small></p>
-            <p class="small-margin info-value" id="kibitzer2-nodes">0</p>
-          </div>
-          <div class="col-sm info">
-            <p class="small-margin"><small class="info-header">Nps</small></p>
-            <p class="small-margin info-value" id="kibitzer2-nps">0</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-sm-3" style="text-align: right">
-        <h3><small id="kibitzer2-time"><mark>	&#8734; </mark></small></h3>
-      </div>
-      <div class="col-sm-12">
-        <p class="pv"><small id="kibitzer2-pv"></small></p>
-      </div>
-    </div>
-  </div>`);
 
   const ctx = $("#eval-chart").get(0);
   var chart = new Chart(ctx, {
