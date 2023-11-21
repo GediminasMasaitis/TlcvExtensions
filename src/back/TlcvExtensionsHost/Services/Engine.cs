@@ -2,178 +2,202 @@
 using System.Text.RegularExpressions;
 using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Models;
-using static System.Formats.Asn1.AsnWriter;
 
-namespace TlcvExtensionsHost.Services
+namespace TlcvExtensionsHost.Services;
+
+public partial class Engine
 {
-    public class Engine : IEngine
+    private readonly ILogger<Engine> _logger;
+    private Process? _process;
+    private string? _currentFen;
+
+    public EngineConfig? Config { get; private set; }
+    public EngineInfo? CurrentEngineInfo { get; private set; }
+
+    public Engine(ILogger<Engine> logger)
     {
-        private readonly ILogger<Engine> _logger;
-        private Process _process;
-        private string _currentFen;
+        _logger = logger;
+    }
 
-        public EngineConfig Config { get; private set; }
-        public EngineInfo CurrentEngineInfo { get; private set; }
+    public async Task RunAsync(EngineConfig config)
+    {
+        Config = config;
+        _logger.LogInformation("Running {EngineName} at {EnginePath}", config.Name, config.Path);
 
-        public Engine(ILogger<Engine> logger)
+        if (!File.Exists(config.Path))
         {
-            _logger = logger;
+            _logger.LogWarning("Engine at {EnginePath} doesn't exist.", config.Path);
+            return;
         }
 
-        public async Task RunAsync(EngineConfig config)
+        var startInfo = new ProcessStartInfo
         {
-            Config = config;
-            _logger.LogInformation("Running {EngineName} at {EnginePath}", config.Name, config.Path);
+            FileName = config.Path,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
 
-            if (!File.Exists(config.Path))
+        _process = Process.Start(startInfo);
+        if (_process is null)
+        {
+            _logger.LogError("Unexpected error starting engine process");
+            return;
+        }
+
+        await SendAsync("uci");
+        if (config.Options != null)
+        {
+            foreach (var option in config.Options)
             {
-                _logger.LogWarning("Engine at {EnginePath} doesn't exist.", config.Path);
+                await SendAsync($"setoption name {option.Name} value {option.Value}");
+            }
+        }
+        while (true)
+        {
+            if (_process.HasExited)
+            {
+                _logger.LogWarning("Engine {EngineName} has exited with exit code {EngineExitCode}", config.Name, _process.ExitCode);
                 return;
             }
-
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = config.Path,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            _process = Process.Start(startInfo);
-            await SendAsync("uci");
-            if (config.Options != null)
-            {
-                foreach (var option in config.Options)
-                {
-                    await SendAsync($"setoption name {option.Name} value {option.Value}");
-                }
-            }
-            while (true)
-            {
-                if (_process.HasExited)
-                {
-                    _logger.LogWarning("Engine {EngineName} has exited with exit code {EngineExitCode}", config.Name, _process.ExitCode);
-                    return;
-                }
-                var line = await _process.StandardOutput.ReadLineAsync();
-                HandleOutput(line);
-            }
+            var line = await _process.StandardOutput.ReadLineAsync();
+            HandleOutput(line);
         }
+    }
 
-        private void HandleOutput(string line)
+    private void HandleOutput(string? line)
+    {
+        _logger.LogDebug("{EngineName} >> {EngineOutput}", Config?.Name, line);
+
+        var success = TryGetEngineInfo(line, out var info);
+        if (success)
         {
-            _logger.LogDebug("{EngineName} >> {EngineOutput}", Config.Name, line);
-
-            var success = TryGetEngineInfo(line, out var info);
-            if (success)
-            {
-                CurrentEngineInfo = info;
-            }
+            CurrentEngineInfo = info;
         }
+    }
 
-        private readonly Regex _cpRegex = new Regex(" score cp (-?\\d+)", RegexOptions.Compiled);
-        private readonly Regex _depthRegex = new Regex(" depth (\\d+)", RegexOptions.Compiled);
-        private readonly Regex _nodesRegex = new Regex(" nodes (\\d+)", RegexOptions.Compiled);
-        private readonly Regex _npsRegex = new Regex(" nps (\\d+)", RegexOptions.Compiled);
-        private readonly Regex _pvRegex = new Regex(" pv (.+)", RegexOptions.Compiled);
+    [GeneratedRegex(" score cp (-?\\d+)", RegexOptions.Compiled)]
+    private static partial Regex CpRegex();
+    private readonly Regex _cpRegex = CpRegex();
 
-        private bool TryGetEngineInfo(string line, out EngineInfo info)
+    [GeneratedRegex(" depth (\\d+)", RegexOptions.Compiled)]
+    private static partial Regex DepthRegex();
+    private readonly Regex _depthRegex = DepthRegex();
+
+    [GeneratedRegex(" nodes (\\d+)", RegexOptions.Compiled)]
+    private static partial Regex NodesRegex();
+    private readonly Regex _nodesRegex = NodesRegex();
+
+    [GeneratedRegex(" nps (\\d+)", RegexOptions.Compiled)]
+    private static partial Regex NpsRegex();
+    private readonly Regex _npsRegex = NpsRegex();
+
+    [GeneratedRegex(" pv (.+)", RegexOptions.Compiled)]
+    private static partial Regex PvRegex();
+    private readonly Regex _pvRegex = PvRegex();
+
+    private bool TryGetEngineInfo(string? line, out EngineInfo info)
+    {
+        info = new EngineInfo();
+        if (string.IsNullOrEmpty(line))
         {
-            info = new EngineInfo();
-            if (string.IsNullOrEmpty(line))
-            {
-                return false;
-            }
-
-            if (!line.Contains("info"))
-            {
-                return false;
-            }
-
-            if (line.Contains("lowerbound"))
-            {
-                return false;
-            }
-
-            if (line.Contains("upperbound"))
-            {
-                return false;
-            }
-
-            if (line.Contains("currmove"))
-            {
-                return false;
-            }
-
-            info.Name = Config.Name;
-
-            var cpMatch = _cpRegex.Match(line);
-            if (cpMatch.Success)
-            {
-                if (int.TryParse(cpMatch.Groups[1].Value, out var cp))
-                {
-                    if (_currentFen.Contains(" b "))
-                    {
-                        cp = -cp;
-                    }
-                    info.Score = cp.ToString();
-                }
-            }
-
-            var depthMatch = _depthRegex.Match(line);
-            if (depthMatch.Success)
-            {
-                if (int.TryParse(depthMatch.Groups[1].Value, out var depth))
-                {
-                    info.Depth = depth;
-                }
-            }
-
-            var nodesMatch = _nodesRegex.Match(line);
-            if (nodesMatch.Success)
-            {
-                if (long.TryParse(nodesMatch.Groups[1].Value, out var nodes))
-                {
-                    info.Nodes = nodes;
-                }
-            }
-
-            var npsMatch = _npsRegex.Match(line);
-            if (npsMatch.Success)
-            {
-                if (long.TryParse(npsMatch.Groups[1].Value, out var nps))
-                {
-                    info.Nps = nps;
-                }
-            }
-
-            var pvMatch = _pvRegex.Match(line);
-            if (pvMatch.Success)
-            {
-                info.Pv = pvMatch.Groups[1].Value;
-            }
-
-            return true;
+            return false;
         }
 
-        private async Task SendAsync(string line)
+        if (!line.Contains("info"))
         {
-            _logger.LogDebug("{EngineName} << {EngineOutput}", Config.Name, line);
-            await _process.StandardInput.WriteLineAsync(line);
+            return false;
         }
 
-        public async Task SetFenAsync(string fen)
+        if (line.Contains("lowerbound"))
         {
-            _currentFen = fen;
-            await SendAsync("stop");
-            if (fen == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-            {
-                await SendAsync("ucinewgame");
-            }
-            await SendAsync($"position fen {fen}");
-            await SendAsync("go infinite");
+            return false;
         }
+
+        if (line.Contains("upperbound"))
+        {
+            return false;
+        }
+
+        if (line.Contains("currmove"))
+        {
+            return false;
+        }
+
+        info.Name = Config?.Name;
+
+        var cpMatch = _cpRegex.Match(line);
+        if (cpMatch.Success)
+        {
+            if (int.TryParse(cpMatch.Groups[1].Value, out var cp))
+            {
+                if (_currentFen?.Contains(" b ") == true)
+                {
+                    cp = -cp;
+                }
+                info.Score = cp.ToString();
+            }
+        }
+
+        var depthMatch = _depthRegex.Match(line);
+        if (depthMatch.Success)
+        {
+            if (int.TryParse(depthMatch.Groups[1].Value, out var depth))
+            {
+                info.Depth = depth;
+            }
+        }
+
+        var nodesMatch = _nodesRegex.Match(line);
+        if (nodesMatch.Success)
+        {
+            if (long.TryParse(nodesMatch.Groups[1].Value, out var nodes))
+            {
+                info.Nodes = nodes;
+            }
+        }
+
+        var npsMatch = _npsRegex.Match(line);
+        if (npsMatch.Success)
+        {
+            if (long.TryParse(npsMatch.Groups[1].Value, out var nps))
+            {
+                info.Nps = nps;
+            }
+        }
+
+        var pvMatch = _pvRegex.Match(line);
+        if (pvMatch.Success)
+        {
+            info.Pv = pvMatch.Groups[1].Value;
+        }
+
+        return true;
+    }
+
+    private async Task SendAsync(string line)
+    {
+        if (_process is null)
+        {
+            _logger.LogError("Engine process not started");
+            return;
+        }
+
+        _logger.LogDebug("{EngineName} << {EngineOutput}", Config?.Name, line);
+        await _process.StandardInput.WriteLineAsync(line);
+    }
+
+    public async Task SetFenAsync(string fen)
+    {
+        _currentFen = fen;
+        await SendAsync("stop");
+        if (fen == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        {
+            await SendAsync("ucinewgame");
+        }
+        await SendAsync($"position fen {fen}");
+        await SendAsync("go infinite");
     }
 }

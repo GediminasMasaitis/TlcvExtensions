@@ -1,40 +1,46 @@
 using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Services;
-using Serilog;
 using Serilog.Events;
+using TlcvExtensionsHost.Models;
+using Microsoft.AspNetCore.Mvc;
+using Serilog.Core;
+using TlcvExtensionsHost;
+using Serilog;
 
-namespace TlcvExtensionsHost
-{
-    public class Program
+var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.UseUrls("http://127.0.0.1:5210");
+builder.Services.Configure<ServiceConfig>(builder.Configuration);
+builder.Services.AddTlcvExtensions();
+builder.Logging.AddSerilog(CreateLogger());
+
+var app = builder.Build();
+
+app.Services.GetRequiredService<EngineManager>()
+    .Run();
+
+app.MapGet("/query",
+    (EngineManager engineManager) => new QueryResponse(engineManager.GetCurrentInfos()));
+
+app.MapPost("/fen",
+    async ([FromBody] FenRequest request, EngineManager engineManager, ILogger<Program> logger) =>
     {
-        public static async Task Main(string[] args)
-        {
-            var loggerConfiguration = new LoggerConfiguration();
-            loggerConfiguration.Enrich.FromLogContext();
-            loggerConfiguration.WriteTo.Console();
-            loggerConfiguration.MinimumLevel.Debug();
-            loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
-            //loggerConfiguration.MinimumLevel.Information();
-            //loggerConfiguration.MinimumLevel.Warning();
-            Log.Logger = loggerConfiguration.CreateLogger();
+        logger.LogInformation("FEN: {Fen}", request.Fen);
+        await engineManager.SetFenAsync(request.Fen);
 
-            var builder = WebApplication.CreateBuilder(args);
-            builder.WebHost.UseUrls("http://127.0.0.1:5210");
-            builder.Services.Configure<ServiceConfig>(builder.Configuration);
-            builder.Services.AddTlcvExtensions();
-            var app = builder.Build();
+        return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
+    });
 
-            app.UseRouting();
-            app.UseEndpoints(endpointConfiguration =>
-            {
-                endpointConfiguration.MapControllers();
-            });
+app.Run();
 
-            var provider = app.Services;
-            var engineManager = provider.GetRequiredService<IEngineManager>();
-            await engineManager.RunAsync();
-
-            await app.RunAsync();
-        }
-    }
+static Logger CreateLogger()
+{
+    var loggerConfiguration = new LoggerConfiguration();
+    loggerConfiguration.Enrich.FromLogContext();
+    loggerConfiguration.WriteTo.Console();
+    loggerConfiguration.MinimumLevel.Debug();
+    loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
+    //loggerConfiguration.MinimumLevel.Information();
+    //loggerConfiguration.MinimumLevel.Warning();
+    return loggerConfiguration.CreateLogger();
 }

@@ -1,7 +1,6 @@
-﻿namespace TlcvExtensionsHost.Configs
+﻿namespace TlcvExtensionsHost.Configs;
+
+public class ServiceConfig
 {
-    public class ServiceConfig
-    {
-        public IList<EngineConfig> Engines { get; set; }
-    }
+    public IList<EngineConfig> Engines { get; set; } = new List<EngineConfig>();
 }
