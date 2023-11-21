@@ -200,4 +200,10 @@ public partial class Engine
         await SendAsync($"position fen {fen}");
         await SendAsync("go infinite");
     }
+
+    public void ShutDown()
+    {
+        _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
+        _process?.Close();
+    }
 }
