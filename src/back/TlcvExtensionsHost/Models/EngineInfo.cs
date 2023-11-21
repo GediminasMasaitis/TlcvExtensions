@@ -1,12 +1,11 @@
-﻿namespace TlcvExtensionsHost.Models
+﻿namespace TlcvExtensionsHost.Models;
+
+public class EngineInfo
 {
-    public class EngineInfo
-    {
-        public string Name { get; set; }
-        public string Score { get; set; }
-        public int Depth { get; set; }
-        public long Nodes { get; set; }
-        public long Nps { get; set; }
-        public string Pv { get; set; }
-    }
+    public string? Name { get; set; }
+    public string? Score { get; set; }
+    public int Depth { get; set; }
+    public long Nodes { get; set; }
+    public long Nps { get; set; }
+    public string? Pv { get; set; }
 }

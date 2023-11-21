@@ -1,55 +1,55 @@
 ﻿using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Models;
 
-namespace TlcvExtensionsHost.Services
+namespace TlcvExtensionsHost.Services;
+
+public class EngineManager
 {
-    public class EngineManager : IEngineManager
+    private readonly IServiceProvider _provider;
+    private readonly ServiceConfig _config;
+
+    private readonly List<Task> _engineTasks;
+
+    public List<Engine> Engines { get; }
+
+    public EngineManager(IServiceProvider provider, ServiceConfig config)
     {
-        private readonly IServiceProvider _provider;
-        private readonly ILogger<EngineManager> _logger;
-        private readonly ServiceConfig _config;
+        _provider = provider;
+        _config = config;
 
-        private readonly IList<Task> _engineTasks;
+        Engines = new List<Engine>(config.Engines.Count);
+        _engineTasks = new List<Task>(config.Engines.Count);
+    }
 
-        public IList<IEngine> Engines { get; }
-
-        public EngineManager(IServiceProvider provider, ILogger<EngineManager> logger, ServiceConfig config)
+    public void Run()
+    {
+        foreach (var engineConfig in _config.Engines)
         {
-            _provider = provider;
-            _logger = logger;
-            _config = config;
-
-            Engines = new List<IEngine>();
-            _engineTasks = new List<Task>();
+            var engine = _provider.GetRequiredService<Engine>();
+            var engineTask = engine.RunAsync(engineConfig);
+            Engines.Add(engine);
+            _engineTasks.Add(engineTask);
         }
+    }
 
-        public async Task RunAsync()
+    public async Task SetFenAsync(string fen)
+    {
+        foreach (var engine in Engines)
         {
-            foreach (var engineConfig in _config.Engines)
-            {
-                var engine = _provider.GetRequiredService<IEngine>();
-                var engineTask = engine.RunAsync(engineConfig);
-                Engines.Add(engine);
-                _engineTasks.Add(engineTask);
-            }
+            await engine.SetFenAsync(fen);
         }
+    }
 
-        public async Task SetFenAsync(string fen)
+    public List<EngineInfo> GetCurrentInfos()
+    {
+        var infos = new List<EngineInfo>(Engines.Count);
+        foreach (Engine engine in Engines)
         {
-            foreach (var engine in Engines)
-            {
-                await engine.SetFenAsync(fen);
-            }
-        }
-
-        public IList<EngineInfo> GetCurrentInfos()
-        {
-            var infos = new List<EngineInfo>();
-            foreach (var engine in Engines)
+            if (engine.CurrentEngineInfo is not null)
             {
                 infos.Add(engine.CurrentEngineInfo);
             }
-            return infos;
         }
+        return infos;
     }
 }

@@ -1,7 +1,11 @@
-﻿namespace TlcvExtensionsHost.Models
+﻿namespace TlcvExtensionsHost.Models;
+
+public class QueryResponse
 {
-    public class QueryResponse
+    public List<EngineInfo> EngineInfos { get; set; }
+
+    public QueryResponse(List<EngineInfo> engineInfos)
     {
-        public IList<EngineInfo> EngineInfos { get; set; }
+        EngineInfos = engineInfos;
     }
 }

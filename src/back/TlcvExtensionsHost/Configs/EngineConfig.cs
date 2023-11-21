@@ -2,7 +2,7 @@
 
 public class EngineConfig
 {
-    public string Name { get; set; }
-    public string Path { get; set; }
-    public IList<EngineOption> Options { get; set; }
+    public required string Name { get; set; }
+    public required string Path { get; set; }
+    public IList<EngineOption> Options { get; set; } = new List<EngineOption>();
 }

@@ -2,6 +2,6 @@
 
 public class EngineOption
 {
-    public string Name { get; set; }
-    public string Value { get; set; }
+    public required string Name { get; set; }
+    public required string Value { get; set; }
 }
