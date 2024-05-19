@@ -44,7 +44,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
     - name: Build
-      run: dotnet build -c Release
+      run: dotnet build -c Release src\back
 
     - name: Publish Engine
       run: dotnet publish src\back\TlcvExtensionsHost\TlcvExtensionsHost.csproj -c Release --runtime ${{ matrix.runtime-identifier }} --self-contained /p:PublishSingleFile=true /p:PublishTrimmed=true /p:IncludeNativeLibrariesForSelfExtract -o artifacts/${{ matrix.runtime-identifier }}
