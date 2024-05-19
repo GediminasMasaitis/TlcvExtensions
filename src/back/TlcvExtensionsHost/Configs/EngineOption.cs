@@ -1,7 +1,11 @@
-﻿namespace TlcvExtensionsHost.Configs;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class EngineOption
+namespace TlcvExtensionsHost.Configs;
+
+public sealed record EngineOption
 {
-    public required string Name { get; set; }
-    public required string Value { get; set; }
+    [Required] // https://github.com/dotnet/runtime/issues/101984
+    public string Name { get; set; } = null!;
+    [Required]
+    public string Value { get; set; } = null!;
 }
