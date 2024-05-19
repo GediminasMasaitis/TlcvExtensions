@@ -15,7 +15,6 @@ public static class ServiceConfiguration
             loggingBuilder.ClearProviders();
             loggingBuilder.AddSerilog();
         });
-        services.AddControllers();
 
         services.AddTlcvExtensionsConfigs();
 
