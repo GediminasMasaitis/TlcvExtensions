@@ -44,10 +44,10 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-nuget-
     - name: Build
-      run: dotnet build -c Release src\back
+      run: dotnet build -c Release src/back
 
     - name: Publish Engine
-      run: dotnet publish src\back\TlcvExtensionsHost\TlcvExtensionsHost.csproj -c Release --runtime ${{ matrix.runtime-identifier }} --self-contained /p:PublishSingleFile=true /p:PublishTrimmed=true /p:IncludeNativeLibrariesForSelfExtract -o artifacts/${{ matrix.runtime-identifier }}
+      run: dotnet publish src/back/TlcvExtensionsHost/TlcvExtensionsHost.csproj -c Release --runtime ${{ matrix.runtime-identifier }} --self-contained /p:PublishSingleFile=true /p:PublishTrimmed=true /p:IncludeNativeLibrariesForSelfExtract /p:IncludeAllContentForSelfExtract=true -o artifacts/${{ matrix.runtime-identifier }}
 
     - name: Upload TlcvExtensionsHost-${{ github.run_number }}-${{ matrix.runtime-identifier }} artifact
       uses: actions/upload-artifact@v4
