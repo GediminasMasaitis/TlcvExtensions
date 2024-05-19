@@ -15,6 +15,8 @@ public static class ServiceConfiguration
             loggingBuilder.ClearProviders();
             loggingBuilder.AddSerilog();
         });
+        services.ConfigureHttpJsonOptions(options =>
+                options.SerializerOptions.TypeInfoResolverChain.Add(TlcvExtensionsHostJsonSerializerContext.Default));
 
         services.AddTlcvExtensionsConfigs();
 
