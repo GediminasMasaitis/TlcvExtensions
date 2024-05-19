@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        TLCV Extensions
 // @namespace   Violentmonkey Scripts
-// @match       https://tlcv.net/*
+// @match       https://ccrl.live/*
 // @grant       GM.xmlHttpRequest
 // @version     1.0
 // @author      Gediminas Masaitis
