@@ -3,9 +3,6 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - master
 env:
     DOTNET_VERSION: 8.0.x
 
@@ -16,20 +13,25 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest, macos-14]
+        runtime-identifier: [win-x64, win-arm64, linux-x64, osx-x64, osx-arm64]
         include:
-          - os: ubuntu-latest
-            runtime-identifier: linux-x64
-          - os: windows-latest
-            runtime-identifier: win-x64
-          - os: macOS-latest
-            runtime-identifier: osx-x64
-          - os: macos-14
-            runtime-identifier: osx-arm64
+          - runtime-identifier: win-x64
+            os: windows-latest
+          - runtime-identifier: win-arm64
+            os: windows-latest
+          - runtime-identifier: linux-x64
+            os: ubuntu-latest
+          - runtime-identifier: osx-x64
+            os: macOS-13
+          - runtime-identifier: osx-arm64
+            os: macOS-latest
       fail-fast: false
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v4.x
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -50,10 +52,10 @@ jobs:
     - name: Publish Engine
       run: dotnet publish src/back/TlcvExtensionsHost/TlcvExtensionsHost.csproj -c Release --runtime ${{ matrix.runtime-identifier }} --self-contained /p:PublishSingleFile=true /p:PublishTrimmed=true /p:IncludeNativeLibrariesForSelfExtract /p:IncludeAllContentForSelfExtract=true -o artifacts/${{ matrix.runtime-identifier }}
 
-    - name: Upload TlcvExtensionsHost-${{ github.run_number }}-${{ matrix.runtime-identifier }} artifact
+    - name: Upload TlcvExtensionsHost-${{ env.GITHUB_REF_SLUG }}-${{ github.run_number }}-${{ matrix.runtime-identifier }} artifact
       uses: actions/upload-artifact@v4
       with:
-        name: TlcvExtensionsHost-${{ github.run_number }}-${{ matrix.runtime-identifier }}
+        name: TlcvExtensionsHost-${{ env.GITHUB_REF_SLUG }}-${{ github.run_number }}-${{ matrix.runtime-identifier }}
         path: |
           artifacts/${{ matrix.runtime-identifier }}/
           !artifacts/**/*.pdb
