@@ -1,0 +1,125 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version number'
+        required: true
+      should_tag_new_version:
+        description: 'Tag version release. If false, no release will be created either'
+        type: boolean
+        default: true
+        required: false
+      should_create_github_release:
+        description: 'Create GitHub Release'
+        type: boolean
+        default: true
+        required: false
+env:
+    DOTNET_VERSION: 8.0.x
+
+jobs:
+
+  build-and-publish:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        runtime-identifier: [win-x64, win-arm64, linux-x64, osx-x64, osx-arm64]
+        include:
+          - runtime-identifier: win-x64
+            os: windows-latest
+          - runtime-identifier: win-arm64
+            os: windows-latest
+          - runtime-identifier: linux-x64
+            os: ubuntu-latest
+          - runtime-identifier: osx-x64
+            os: macOS-13
+          - runtime-identifier: osx-arm64
+            os: macOS-latest
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Nuget cache
+      uses: actions/cache@v4
+      with:
+        path:
+          ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    - name: Build
+      run: dotnet build -c Release src/back
+
+    - name: Publish Engine
+      run: dotnet publish src/back/TlcvExtensionsHost/TlcvExtensionsHost.csproj -c Release --runtime ${{ matrix.runtime-identifier }} --self-contained /p:PublishSingleFile=true /p:PublishTrimmed=true /p:IncludeNativeLibrariesForSelfExtract /p:IncludeAllContentForSelfExtract=true -o artifacts/${{ matrix.runtime-identifier }}
+
+    - name: Upload TlcvExtensionsHost-${{ github.event.inputs.version }}-${{ matrix.runtime-identifier }} artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TlcvExtensionsHost-${{ github.event.inputs.version }}-${{ matrix.runtime-identifier }}
+        path: |
+          artifacts/${{ matrix.runtime-identifier }}/
+          !artifacts/**/*.pdb
+        if-no-files-found: error
+
+  release:
+    needs: publish-artifacts
+    if: github.event.inputs.version != ''
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Install hub tool
+      if: github.event.inputs.should_create_github_release == 'true'
+      run: |
+        sudo apt-get update && sudo apt-get install -y hub
+
+    - uses: actions/checkout@v4
+
+    - name: Configure git user
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v3.x
+
+    - name: Create git tag
+      if: github.event.inputs.should_tag_new_version == 'true'
+      run: |
+        git switch ${{ env.GITHUB_REF_NAME }}
+        git status
+        git tag -a v${{ github.event.inputs.version }} -m "v${{ github.event.inputs.version }}"
+        git push --tags
+
+    - uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+
+    - name: Compress artifacts again
+      if: github.event.inputs.should_create_github_release == 'true' && github.event.inputs.should_tag_new_version == 'true'
+      run: for i in artifacts/*[!-nuget]; do zip -0 -r -q -j "${i%/}.zip" "$i" & done; wait
+
+    - name: Create GitHub release and upload assets
+      if: github.event.inputs.should_create_github_release == 'true' && github.event.inputs.should_tag_new_version == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -x
+        assets=()
+        for asset in artifacts/*.zip; do
+          assets+=("-a" "$asset")
+        done
+        assets+=("-a" "src/front/tlcvExtensions.js")
+        tag_name="v${{ github.event.inputs.version }}"
+        hub release create "${assets[@]}" --draft --message "$tag_name" "$tag_name"
