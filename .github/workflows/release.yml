@@ -21,7 +21,7 @@ env:
 
 jobs:
 
-  build-and-publish:
+  publish-artifacts:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -77,6 +77,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
 
     - name: Install hub tool
@@ -85,6 +88,8 @@ jobs:
         sudo apt-get update && sudo apt-get install -y hub
 
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Configure git user
       run: |
