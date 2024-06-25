@@ -13,7 +13,7 @@ This is what it looks like to watch a game with two engines (StockFish 13 and St
 
 ## How to setup
 
-You can find the frontend script and a few pre-compiled binaries (Windows, Linux, macOS) in the [latest release](https://github.com/lynx-chess/Lynx/releases/latest).
+You can find the frontend script and a few pre-compiled binaries (Windows, Linux, macOS) in the [latest release](https://github.com/GediminasMasaitis/TlcvExtensions/releases/latest).
 
 Alternatively, you can always build the backend yourself (.NET 8.0 required) and take the script from the repository ([`src/front/tlcvExtensions.js`](src/front/tlcvExtensions.js))
 
