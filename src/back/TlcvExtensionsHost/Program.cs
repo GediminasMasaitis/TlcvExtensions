@@ -15,8 +15,6 @@ builder.Services.AddTlcvExtensions();
 builder.Logging.AddSerilog(CreateLogger());
 
 var app = builder.Build();
-app.Services.GetRequiredService<EngineManager>()
-    .Run();
 
 app.MapGet("/query",
     (EngineManager engineManager) => new QueryResponse(engineManager.GetCurrentInfos()));
@@ -30,6 +28,7 @@ app.MapPost("/fen",
         return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
     });
 
+app.Lifetime.ApplicationStarted.Register(() => app.Services.GetRequiredService<EngineManager>().Run());
 app.Lifetime.ApplicationStopping.Register(() => StopEngineProcesses(app));
 
 await app.RunAsync();
