@@ -1,18 +1,21 @@
 using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Services;
-using Serilog.Events;
 using TlcvExtensionsHost.Models;
 using Microsoft.AspNetCore.Mvc;
 using Serilog.Core;
 using TlcvExtensionsHost;
 using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+#pragma warning disable S1075 // URIs should not be hardcoded - FE script relies on this hardcoded port
 builder.WebHost.UseUrls("http://127.0.0.1:5210");
+#pragma warning restore S1075 // URIs should not be hardcoded
+
 builder.Services.Configure<ServiceConfig>(builder.Configuration);
 builder.Services.AddTlcvExtensions();
-builder.Logging.AddSerilog(CreateLogger());
+builder.Logging.AddSerilog(CreateLogger(builder.Configuration));
 
 var app = builder.Build();
 
@@ -35,15 +38,15 @@ await app.RunAsync();
 
 Console.WriteLine("Graceful shutdown completed");
 
-static Logger CreateLogger()
+static Logger CreateLogger(IConfiguration configuration)
 {
-    var loggerConfiguration = new LoggerConfiguration();
-    loggerConfiguration.Enrich.FromLogContext();
-    loggerConfiguration.WriteTo.Console();
-    loggerConfiguration.MinimumLevel.Debug();
-    loggerConfiguration.MinimumLevel.Override("Microsoft", LogEventLevel.Warning);
-    //loggerConfiguration.MinimumLevel.Information();
-    //loggerConfiguration.MinimumLevel.Warning();
+    var loggerConfiguration = new LoggerConfiguration()
+        .Enrich.FromLogContext()
+        .WriteTo.Console()
+        .MinimumLevel.Debug()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .ReadFrom.Configuration(configuration);
+
     return loggerConfiguration.CreateLogger();
 }
 
