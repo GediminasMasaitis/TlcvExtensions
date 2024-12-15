@@ -15,7 +15,6 @@ builder.Services.AddTlcvExtensions();
 builder.Logging.AddSerilog(CreateLogger());
 
 var app = builder.Build();
-
 app.Services.GetRequiredService<EngineManager>()
     .Run();
 
@@ -33,7 +32,7 @@ app.MapPost("/fen",
 
 app.Lifetime.ApplicationStopping.Register(() => StopEngineProcesses(app));
 
-app.Run();
+await app.RunAsync();
 
 Console.WriteLine("Graceful shutdown completed");
 
@@ -51,5 +50,7 @@ static Logger CreateLogger()
 
 static void StopEngineProcesses(WebApplication app)
 {
-    app.Services.GetRequiredService<EngineManager>().Engines.ForEach(e => e.ShutDown());
+    var shutDownTasks = app.Services.GetRequiredService<EngineManager>().Engines.Select(e => e.ShutDown());
+
+    Task.WhenAll(shutDownTasks).Wait();
 }

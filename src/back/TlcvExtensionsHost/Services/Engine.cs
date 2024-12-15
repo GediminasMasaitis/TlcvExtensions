@@ -201,9 +201,18 @@ public partial class Engine
         await SendAsync("go infinite");
     }
 
-    public void ShutDown()
+    public async Task ShutDown()
     {
         _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
+        await SendAsync("quit");
+
+        await Task.Delay(3_000);
+
+        if (_process?.HasExited != true)
+        {
+            _logger.LogWarning("Engine {EngineName} at {EnginePath} might still be running", Config?.Name, Config?.Path);
+        }
+
         _process?.Close();
     }
 }
