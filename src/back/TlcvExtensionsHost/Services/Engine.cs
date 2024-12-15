@@ -61,9 +61,13 @@ public partial class Engine
         {
             if (_process.HasExited)
             {
-                _logger.LogWarning("Engine {EngineName} has exited with exit code {EngineExitCode}", config.Name, _process.ExitCode);
+                _logger.Log(
+                    _process.ExitCode == 0 ? LogLevel.Information : LogLevel.Error,
+                    "Engine {EngineName} has exited with exit code {EngineExitCode}", config.Name, _process.ExitCode);
+
                 return;
             }
+
             var line = await _process.StandardOutput.ReadLineAsync();
             HandleOutput(line);
         }
