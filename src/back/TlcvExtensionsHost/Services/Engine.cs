@@ -210,7 +210,12 @@ public partial class Engine
             _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
             await SendAsync("quit");
 
-            await Task.Delay(GracefulShutdownTime);
+            await Task.Delay(100);
+
+            if (!_process.HasExited)
+            {
+                await Task.Delay(GracefulShutdownTime);
+            }
 
             if (!_process.HasExited)
             {
