@@ -7,6 +7,8 @@ namespace TlcvExtensionsHost.Services;
 
 public partial class Engine
 {
+    private const int GracefulShutdownTime = 3_000;
+
     private readonly ILogger<Engine> _logger;
     private Process? _process;
     private string? _currentFen;
@@ -203,16 +205,19 @@ public partial class Engine
 
     public async Task ShutDown()
     {
-        _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
-        await SendAsync("quit");
-
-        await Task.Delay(3_000);
-
-        if (_process?.HasExited != true)
+        if (_process is not null)
         {
-            _logger.LogWarning("Engine {EngineName} at {EnginePath} might still be running", Config?.Name, Config?.Path);
-        }
+            _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
+            await SendAsync("quit");
 
-        _process?.Close();
+            await Task.Delay(GracefulShutdownTime);
+
+            if (!_process.HasExited)
+            {
+                _logger.LogWarning("Engine {EngineName} at {EnginePath} might still be running", Config?.Name, Config?.Path);
+            }
+
+            _process?.Close();
+        }
     }
 }
