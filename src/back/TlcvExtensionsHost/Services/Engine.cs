@@ -37,7 +37,7 @@ public partial class Engine
             FileName = config.Path,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            RedirectStandardError = false,
             UseShellExecute = false,
             CreateNoWindow = true
         };
