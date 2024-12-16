@@ -31,8 +31,11 @@ app.MapPost("/fen",
         return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
     });
 
+bool didShutDown = false;
+
 app.Lifetime.ApplicationStarted.Register(() => app.Services.GetRequiredService<EngineManager>().Run());
-app.Lifetime.ApplicationStopping.Register(() => StopEngineProcesses(app));
+app.Lifetime.ApplicationStopping.Register(() => { didShutDown = true; StopEngineProcesses(app); });
+AppDomain.CurrentDomain.ProcessExit += (e, a) => { if (!didShutDown) app.Lifetime.StopApplication(); };
 
 await app.RunAsync();
 
