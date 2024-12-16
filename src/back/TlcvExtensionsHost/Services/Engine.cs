@@ -197,14 +197,17 @@ public partial class Engine
 
     public async Task SetFenAsync(string fen)
     {
-        _currentFen = fen;
-        await SendAsync("stop");
-        if (fen == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+        if (_process?.HasExited == false)
         {
-            await SendAsync("ucinewgame");
+            _currentFen = fen;
+            await SendAsync("stop");
+            if (fen == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            {
+                await SendAsync("ucinewgame");
+            }
+            await SendAsync($"position fen {fen}");
+            await SendAsync("go infinite");
         }
-        await SendAsync($"position fen {fen}");
-        await SendAsync("go infinite");
     }
 
     public async Task ShutDown()
@@ -213,20 +216,20 @@ public partial class Engine
         {
             if (!_process.HasExited)
             {
-            _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
-            await SendAsync("quit");
+                _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
+                await SendAsync("quit");
 
-            await Task.Delay(100);
+                await Task.Delay(100);
 
-            if (!_process.HasExited)
-            {
-                await Task.Delay(GracefulShutdownTime);
-            }
+                if (!_process.HasExited)
+                {
+                    await Task.Delay(GracefulShutdownTime);
+                }
 
-            if (!_process.HasExited)
-            {
-                _logger.LogWarning("Engine {EngineName} at {EnginePath} might still be running", Config?.Name, Config?.Path);
-            }
+                if (!_process.HasExited)
+                {
+                    _logger.LogWarning("Engine {EngineName} at {EnginePath} might still be running", Config?.Name, Config?.Path);
+                }
             }
 
             _process?.Close();
