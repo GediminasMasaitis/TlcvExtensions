@@ -21,7 +21,7 @@ public class EngineManager
         _engineTasks = new List<Task>(config.Engines.Count);
     }
 
-    public void Run()
+    public void Start()
     {
         foreach (var engineConfig in _config.Engines)
         {
@@ -30,6 +30,13 @@ public class EngineManager
             Engines.Add(engine);
             _engineTasks.Add(engineTask);
         }
+    }
+
+    public async Task StopAsync()
+    {
+        var shutDownTasks = Engines.Select(e => e.ShutDown());
+
+        await Task.WhenAll(shutDownTasks);
     }
 
     public async Task SetFenAsync(string fen)

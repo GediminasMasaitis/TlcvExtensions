@@ -31,12 +31,9 @@ app.MapPost("/fen",
         return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
     });
 
-app.Lifetime.ApplicationStarted.Register(() => app.Services.GetRequiredService<EngineManager>().Run());
-app.Lifetime.ApplicationStopping.Register(() => StopEngineProcesses(app));
+AppDomain.CurrentDomain.ProcessExit += async (e, a) => await app.Services.GetRequiredService<EngineManager>().Stop();
 
 await app.RunAsync();
-
-Console.WriteLine("Graceful shutdown completed");
 
 static Logger CreateLogger(IConfiguration configuration)
 {
@@ -48,11 +45,4 @@ static Logger CreateLogger(IConfiguration configuration)
         .ReadFrom.Configuration(configuration);
 
     return loggerConfiguration.CreateLogger();
-}
-
-static void StopEngineProcesses(WebApplication app)
-{
-    var shutDownTasks = app.Services.GetRequiredService<EngineManager>().Engines.Select(e => e.ShutDown());
-
-    Task.WhenAll(shutDownTasks).Wait();
 }

@@ -23,6 +23,8 @@ public static class ServiceConfiguration
         services.AddSingleton<EngineManager>();
         services.AddTransient<Engine>();
 
+        services.AddHostedService<EnginesHostedService>();
+
         return services;
     }
 
