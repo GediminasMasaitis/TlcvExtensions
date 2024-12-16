@@ -26,6 +26,16 @@ app.MapPost("/fen",
         return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
     });
 
-AppDomain.CurrentDomain.ProcessExit += async (e, a) => await app.Services.GetRequiredService<EngineManager>().StopAsync();
+bool hostShutdown = false;
+
+AppDomain.CurrentDomain.ProcessExit += async (e, a) =>
+{
+    if (!hostShutdown)
+    {
+        await app.Services.GetRequiredService<EngineManager>().StopAsync();
+    }
+};
 
 await app.RunAsync();
+
+hostShutdown = true;
