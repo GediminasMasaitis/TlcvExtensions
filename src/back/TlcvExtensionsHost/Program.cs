@@ -1,11 +1,7 @@
-using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Services;
 using TlcvExtensionsHost.Models;
 using Microsoft.AspNetCore.Mvc;
-using Serilog.Core;
 using TlcvExtensionsHost;
-using Serilog;
-using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://127.0.0.1:5210");
 #pragma warning restore S1075 // URIs should not be hardcoded
 
-builder.Services.Configure<ServiceConfig>(builder.Configuration);
-builder.Services.AddTlcvExtensions();
-builder.Logging.AddSerilog(CreateLogger(builder.Configuration));
+builder.Logging.ConfigureSerilog(builder.Configuration);
+builder.Services.AddTlcvExtensions(builder.Configuration);
 
 var app = builder.Build();
 
@@ -31,31 +26,16 @@ app.MapPost("/fen",
         return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
     });
 
-bool didShutDown = false;
+bool hostShutdown = false;
 
-app.Lifetime.ApplicationStarted.Register(() => app.Services.GetRequiredService<EngineManager>().Run());
-app.Lifetime.ApplicationStopping.Register(() => { didShutDown = true; StopEngineProcesses(app); });
-AppDomain.CurrentDomain.ProcessExit += (e, a) => { if (!didShutDown) app.Lifetime.StopApplication(); };
+AppDomain.CurrentDomain.ProcessExit += async (e, a) =>
+{
+    if (!hostShutdown)
+    {
+        await app.Services.GetRequiredService<EngineManager>().StopAsync();
+    }
+};
 
 await app.RunAsync();
 
-Console.WriteLine("Graceful shutdown completed");
-
-static Logger CreateLogger(IConfiguration configuration)
-{
-    var loggerConfiguration = new LoggerConfiguration()
-        .Enrich.FromLogContext()
-        .WriteTo.Console()
-        .MinimumLevel.Debug()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-        .ReadFrom.Configuration(configuration);
-
-    return loggerConfiguration.CreateLogger();
-}
-
-static void StopEngineProcesses(WebApplication app)
-{
-    var shutDownTasks = app.Services.GetRequiredService<EngineManager>().Engines.Select(e => e.ShutDown());
-
-    Task.WhenAll(shutDownTasks).Wait();
-}
+hostShutdown = true;

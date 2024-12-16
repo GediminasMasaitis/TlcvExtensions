@@ -2,5 +2,5 @@
 
 public class ServiceConfig
 {
-    public IList<EngineConfig> Engines { get; set; } = new List<EngineConfig>();
+    public IList<EngineConfig> Engines { get; set; } = [];
 }

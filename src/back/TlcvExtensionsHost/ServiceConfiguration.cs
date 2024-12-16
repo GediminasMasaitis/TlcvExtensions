@@ -1,34 +1,44 @@
 ﻿using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Services;
-using Microsoft.Extensions.Options;
 using Serilog;
+using Serilog.Events;
+using Serilog.Core;
 
 namespace TlcvExtensionsHost;
 
 public static class ServiceConfiguration
 {
-    public static IServiceCollection AddTlcvExtensions(this IServiceCollection services)
+    public static IServiceCollection AddTlcvExtensions(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions();
-        services.AddLogging(loggingBuilder =>
-        {
-            loggingBuilder.ClearProviders();
-            loggingBuilder.AddSerilog();
-        });
-        services.ConfigureHttpJsonOptions(options =>
-                options.SerializerOptions.TypeInfoResolverChain.Add(TlcvExtensionsHostJsonSerializerContext.Default));
+        services.Configure<ServiceConfig>(configuration);
 
-        services.AddTlcvExtensionsConfigs();
+        services.ConfigureHttpJsonOptions(options =>
+            options.SerializerOptions.TypeInfoResolverChain.Add(TlcvExtensionsHostJsonSerializerContext.Default));
 
         services.AddSingleton<EngineManager>();
         services.AddTransient<Engine>();
 
+        services.AddHostedService<EnginesHostedService>();
+
         return services;
     }
 
-    private static IServiceCollection AddTlcvExtensionsConfigs(this IServiceCollection services)
+    public static ILoggingBuilder ConfigureSerilog(this ILoggingBuilder loggingBuilder, IConfiguration configuration)
     {
-        services.AddSingleton(provider => provider.GetRequiredService<IOptions<ServiceConfig>>().Value);
-        return services;
+        return loggingBuilder
+            .ClearProviders()
+            .AddSerilog(CreateLogger(configuration));
+    }
+
+    private static Logger CreateLogger(IConfiguration configuration)
+    {
+        var loggerConfiguration = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .ReadFrom.Configuration(configuration);
+
+        return loggerConfiguration.CreateLogger();
     }
 }
