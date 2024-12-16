@@ -1,11 +1,7 @@
-using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Services;
 using TlcvExtensionsHost.Models;
 using Microsoft.AspNetCore.Mvc;
-using Serilog.Core;
 using TlcvExtensionsHost;
-using Serilog;
-using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://127.0.0.1:5210");
 #pragma warning restore S1075 // URIs should not be hardcoded
 
-builder.Services.Configure<ServiceConfig>(builder.Configuration);
-builder.Services.AddTlcvExtensions();
-builder.Logging.AddSerilog(CreateLogger(builder.Configuration));
+builder.Logging.ConfigureSerilog(builder.Configuration);
+builder.Services.AddTlcvExtensions(builder.Configuration);
 
 var app = builder.Build();
 
@@ -31,18 +26,6 @@ app.MapPost("/fen",
         return new FenResponse(engineManager.Engines.ConvertAll(x => x.Config));
     });
 
-AppDomain.CurrentDomain.ProcessExit += async (e, a) => await app.Services.GetRequiredService<EngineManager>().Stop();
+AppDomain.CurrentDomain.ProcessExit += async (e, a) => await app.Services.GetRequiredService<EngineManager>().StopAsync();
 
 await app.RunAsync();
-
-static Logger CreateLogger(IConfiguration configuration)
-{
-    var loggerConfiguration = new LoggerConfiguration()
-        .Enrich.FromLogContext()
-        .WriteTo.Console()
-        .MinimumLevel.Debug()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-        .ReadFrom.Configuration(configuration);
-
-    return loggerConfiguration.CreateLogger();
-}

@@ -1,4 +1,5 @@
-﻿using TlcvExtensionsHost.Configs;
+﻿using Microsoft.Extensions.Options;
+using TlcvExtensionsHost.Configs;
 using TlcvExtensionsHost.Models;
 
 namespace TlcvExtensionsHost.Services;
@@ -12,13 +13,13 @@ public class EngineManager
 
     public List<Engine> Engines { get; }
 
-    public EngineManager(IServiceProvider provider, ServiceConfig config)
+    public EngineManager(IServiceProvider provider, IOptions<ServiceConfig> config)
     {
         _provider = provider;
-        _config = config;
+        _config = config.Value;
 
-        Engines = new List<Engine>(config.Engines.Count);
-        _engineTasks = new List<Task>(config.Engines.Count);
+        Engines = new List<Engine>(_config.Engines.Count);
+        _engineTasks = new List<Task>(_config.Engines.Count);
     }
 
     public void Start()
