@@ -211,6 +211,8 @@ public partial class Engine
     {
         if (_process is not null)
         {
+            if (!_process.HasExited)
+            {
             _logger.LogInformation("Shutting down {EngineName} at {EnginePath}", Config?.Name, Config?.Path);
             await SendAsync("quit");
 
@@ -224,6 +226,7 @@ public partial class Engine
             if (!_process.HasExited)
             {
                 _logger.LogWarning("Engine {EngineName} at {EnginePath} might still be running", Config?.Name, Config?.Path);
+            }
             }
 
             _process?.Close();
