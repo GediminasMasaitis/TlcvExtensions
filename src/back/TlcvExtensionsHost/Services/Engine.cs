@@ -114,6 +114,13 @@ public partial class Engine
 
         if (!line.Contains("info"))
         {
+            if (line.Contains("uciok"))
+            {
+                info.Name = Config?.Name;
+
+                return true;
+            }
+
             return false;
         }
 
